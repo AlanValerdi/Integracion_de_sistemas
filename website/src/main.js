@@ -14,6 +14,9 @@ scene.background = new Three.Color(0x303030)
 // instanciar render
 const renderer = new Three.WebGLRenderer({ antialias: true });
 
+renderer.shadowMap.enabled = true; // <-- Mapas de sombras activadas
+renderer.shadowMap.type = Three.PCFSoftShadowMap; // <-- Tipo de sombra
+
 // para performance poner atributos/2 y updateStyle=false
 renderer.setSize(window.innerWidth, window.innerHeight);
 
@@ -40,7 +43,7 @@ controls.enableDamping = true; // Suavizado
 
 
 // --MARK: Luz deficniciones
-const ambientLight = new Three.AmbientLight(0xffffff, 0.05);
+const ambientLight = new Three.AmbientLight(0xffffff, 0);
 scene.add(ambientLight);
 
 // luz tipo sol
@@ -54,6 +57,7 @@ let luzSalaObjeto = null;
 let materialApagado = null;
 let materialEncendido = null;
 let luzReal = null;
+let luzTarget = null;
 
 // --MARK: Cargar modelo GLTF
 const loader = new GLTFLoader();
@@ -67,6 +71,11 @@ loader.load(
 
     // Recorrer modelo para encontrar la luz y materiales
     model.traverse((child) => {
+      // Imprimir información de cada malla
+      if (child.isMesh) {
+           console.log(child.name, child.material.type); 
+      }
+
       // donde child es cada objeto dentro del modelo glb
       if (child.isMesh && child.name === "Luz_Sala") {
         console.log("Encontrada la luz de la sala:", child);
@@ -86,6 +95,14 @@ loader.load(
         materialEncendido.emissiveIntensity = 2;
 
       }
+
+      // MARK: Configuracion de sombras para cada malla TODO: ajustar segun modelo
+      // if (child.isMesh && (child.name === "Sofa" || child.name === "Structure" || child.name === "CoffeeTable")) {
+      //     // El sofá y la mesa PROYECTAN sombras
+      //     child.castShadow = true;
+      //     // Y también RECIBEN sombras (ej. del cojín)
+      //     child.receiveShadow = true;
+      // }
     });
 
     // Agregar el modelo a la escena
@@ -100,15 +117,31 @@ loader.load(
 )
 
 function crearLuzReal() {
+    // Parámetros: (color, intensidad, distancia, ángulo, penumbra, decaimiento)
+    // CAMBIOS:
+    // - Distancia: 50 (más alcance)
+    // - Ángulo: Math.PI / 3 (cono más ancho)
+    // - Penumbra: 0.4 (bordes más suaves)
+    // - Decaimiento: 1 (decaída lineal, más fácil de controlar que la cuadrática "2")
+    luzReal = new Three.SpotLight(0xffffee, 0, 50, Math.PI / 3, 0.4, 1);
 
-  // intensidad, distancia, decay
-  luzReal = new Three.PointLight(0xffffee, 3, 20, 2);
+    // Mueve la luz más arriba, dentro de la pantalla
+    const posicionBase = luzSalaObjeto.position;
+    luzReal.position.set(posicionBase.x, posicionBase.y + 7.5, posicionBase.z); // Ajusta el 7.5 si es necesario
 
-  const posicionLuz = luzSalaObjeto.position;
-  luzReal.position.set(posicionLuz.x, posicionLuz.y + 1, posicionLuz.z);
+    // --- ¡NUEVO! PROYECTAR SOMBRAS ---
+    luzReal.castShadow = true; 
+    luzReal.shadow.mapSize.width = 1024; // Resolución de la sombra
+    luzReal.shadow.mapSize.height = 1024;
+    
+    // El objetivo (Target)
+    luzTarget = new Three.Object3D();
+    luzTarget.position.set(posicionBase.x + 3, 0, posicionBase.z);
+    scene.add(luzTarget);
+    luzReal.target = luzTarget;
 
-  const lightHelper = new Three.PointLightHelper(luzReal);
-  scene.add(lightHelper);
+    const lightHelper = new Three.SpotLightHelper(luzReal);
+    scene.add(lightHelper);
 }
 
 // MARK: --- Funciones de control de la luz
@@ -116,7 +149,7 @@ window.encenderLuz = function() {
   if (luzSalaObjeto && materialEncendido && luzReal) {
     console.log("Encendiendo la luz de la sala");
     luzSalaObjeto.material = materialEncendido;
-    luzReal.intensity = 2;
+    luzReal.intensity = 100; // MARK: Ajustar intensidad según necesidad
 
     if(!luzReal.parent) {
       scene.add(luzReal);
