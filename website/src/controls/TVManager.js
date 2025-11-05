@@ -18,22 +18,26 @@ let canalActual = 0;
  */
 function crearLuzTV() {
     // Usamos una SpotLight rectangular para simular una TV
-    tvLuz.light = new THREE.SpotLight(0xffffff, 0, 40, Math.PI / 4, 0.5, 1);
+    tvLuz.light = new THREE.SpotLight(0xffffff, 0, 20, Math.PI / 4, 0.5, 1);
     
     // Posicionar la luz justo enfrente de la pantalla
     const posicionPantalla = new THREE.Vector3();
     tvPantallaObjeto.getWorldPosition(posicionPantalla); // Obtiene la posición mundial
     
     // Coloca la luz un poco delante de la pantalla
-    tvLuz.light.position.set(posicionPantalla.x, posicionPantalla.y, posicionPantalla.z + 0.5); 
+    tvLuz.light.position.set(posicionPantalla.x, posicionPantalla.y, posicionPantalla.z ); 
     
     // --- Apuntar la Luz ---
     // Hacemos que la luz apunte hacia el sofá (ajusta la 'x' o 'z' si es necesario)
     tvLuzTarget.target = new THREE.Object3D();
-    tvLuzTarget.target.position.set(posicionPantalla.x, posicionPantalla.y, 0); // Apunta al centro
+    tvLuzTarget.target.position.set(posicionPantalla.x, posicionPantalla.y - 1, 0); // Apunta al centro
     
     scene.add(tvLuzTarget.target);
     tvLuz.light.target = tvLuzTarget.target;
+
+    // Helper
+    const lightHelper = new THREE.SpotLightHelper(tvLuz.light);
+    scene.add(lightHelper);
     
     // La luz de la TV también proyecta sombras (¡efecto genial!)
     tvLuz.light.castShadow = true;
@@ -54,12 +58,23 @@ function prepararMaterialesCanales() {
     rutasCanales.forEach(ruta => {
         const texturaTV = textureLoader.load(ruta);
         
+        //  Voltear la textura verticalmente
+        texturaTV.flipY = false; // Por defecto es true, lo ponemos en false
+        
+        // Ajustar el wrapping para que cubra toda la geometría
+        texturaTV.wrapS = THREE.ClampToEdgeWrapping; // No repetir horizontalmente
+        texturaTV.wrapT = THREE.ClampToEdgeWrapping; // No repetir verticalmente
+        
+        // Asegurar que la textura se escale correctamente
+        texturaTV.repeat.set(1, 1); // Escala 1:1
+        texturaTV.offset.set(0, 0); // Sin desplazamiento
+        
         // El material "encendido" usa 'map' (la imagen) y 'emissiveMap' (para que brille)
         const material = new THREE.MeshStandardMaterial({
             map: texturaTV,
             emissive: new THREE.Color(0xffffff), // Color base del brillo
             emissiveMap: texturaTV,             // La textura también define dónde brilla
-            emissiveIntensity: 1.0              // Intensidad del brillo
+            emissiveIntensity: 1              // Intensidad del brillo
         });
         materialCanales.push(material);
     });

@@ -7,6 +7,7 @@ import { loadModel } from './core/loader.js';
 import { setupLights, encenderLuzA, apagarLuzA, encenderLuzB, apagarLuzB } from './controls/LightManager.js';
 // Importa modulo de movimiento
 import { setupMovement } from './controls/movement.js'; 
+import { encenderTV, apagarTV, cambiarCanal, setupTV } from './controls/TVManager.js';
 
 // --- 1. Inicialización Asíncrona ---
 async function init() {
@@ -30,6 +31,7 @@ async function init() {
         setupLights(gltf.scene, scene);
         // setupTV(gltf.scene, scene);
         setupMovement(camera, renderer.domElement, collidables);
+        setupTV(gltf.scene);
 
         console.log("Aplicación 3D inicializada.");
 
@@ -42,9 +44,15 @@ async function init() {
 init();
 
 // --- 3. Exponer controles a la consola para pruebas ---
-// (Esto es opcional, pero útil para ti)
+// Control de luces
 window.encenderLuzA = encenderLuzA;
 window.apagarLuzA = apagarLuzA;
 window.encenderLuzB = encenderLuzB;
 window.apagarLuzB = apagarLuzB;
+
+// Control de TV
+window.encenderTV = encenderTV;
+window.apagarTV = apagarTV;
+window.cambiarCanal = cambiarCanal;
+
 // ...etc.
