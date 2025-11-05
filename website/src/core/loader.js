@@ -21,6 +21,17 @@ export function loadModel(path) {
             // onSuccess
             (gltf) => {
                 console.log(`Modelo cargado exitosamente: ${path}`);
+                
+                // Imprimir todos los objetos del modelo
+                console.log('=== Objetos en el modelo ===');
+                gltf.scene.traverse((child) => {
+                    console.log(`- Tipo: ${child.type}, Nombre: "${child.name}"`);
+                    if (child.isMesh) {
+                        console.log(`  └─ Material: ${child.material?.name || 'sin nombre'}`);
+                    }
+                });
+                console.log('=========================');
+                
                 resolve(gltf); // La Promesa se cumple y devuelve el modelo
             },
             // onProgress (opcional, útil para pantallas de carga)

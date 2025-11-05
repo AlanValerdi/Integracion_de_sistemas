@@ -5,6 +5,11 @@ let controls;
 let camera;
 let collidableObjects = []; // Aquí guardaremos las paredes
 
+// Variables para colision:
+const raycaster = new THREE.Raycaster();
+const collisionDistance = 1.0;
+
+
 // Estado del teclado
 const keyStates = {
     'KeyW': false,
@@ -65,7 +70,8 @@ export function updateMovement(delta) {
     }
 
     const moveSpeed = 1.5; // Velocidad de movimiento (ajusta a tu gusto)
-
+    const cameraPosition = camera.position
+    
     // --- Aplicar "fricción" ---
     // Esto hace que el movimiento se detenga suavemente
     velocity.x -= velocity.x * 10.0 * delta;
@@ -77,11 +83,59 @@ export function updateMovement(delta) {
     direction.x = Number(keyStates['KeyA']) - Number(keyStates['KeyD']);
     direction.normalize(); // Asegura velocidad constante en diagonal
 
-    // --- Aplicar velocidad según las teclas ---
-    if (keyStates['KeyW'] || keyStates['KeyS']) {
+    // Direcciones de camara
+    const forwardDirection = new THREE.Vector3();
+    camera.getWorldDirection(forwardDirection);
+    forwardDirection.y = 0; // Ignorar inclinación
+    forwardDirection.normalize();
+
+    const rightDirection = new THREE.Vector3();
+    // `camera.up` (0,1,0) x `forwardDirection` = `leftDirection`
+    rightDirection.crossVectors(camera.up, forwardDirection).negate();
+
+    // 1. Chequeo ADELANTE (W)
+    if (keyStates['KeyW']) {
+        raycaster.set(cameraPosition, forwardDirection);
+        const intersections = raycaster.intersectObjects(collidableObjects, true); // true = recursivo
+        if (intersections.length > 0 && intersections[0].distance < collisionDistance) {
+            direction.z = 0; // Bloquear movimiento
+        }
+    }
+
+    // 2. Chequeo ATRÁS (S)
+    if (keyStates['KeyS']) {
+        const backDirection = forwardDirection.clone().negate();
+        raycaster.set(cameraPosition, backDirection);
+        const intersections = raycaster.intersectObjects(collidableObjects, true);
+        if (intersections.length > 0 && intersections[0].distance < collisionDistance) {
+            direction.z = 0; // Bloquear movimiento
+        }
+    }
+
+    // 3. Chequeo DERECHA (D)
+    if (keyStates['KeyD']) {
+        raycaster.set(cameraPosition, rightDirection);
+        const intersections = raycaster.intersectObjects(collidableObjects, true);
+        if (intersections.length > 0 && intersections[0].distance < collisionDistance) {
+            direction.x = 0; // Bloquear movimiento
+        }
+    }
+
+    // 4. Chequeo IZQUIERDA (A)
+    if (keyStates['KeyA']) {
+        const leftDirection = rightDirection.clone().negate();
+        raycaster.set(cameraPosition, leftDirection);
+        const intersections = raycaster.intersectObjects(collidableObjects, true);
+        if (intersections.length > 0 && intersections[0].distance < collisionDistance) {
+            direction.x = 0; // Bloquear movimiento
+        }
+    }
+
+    // --- Aplicar velocidad (basado en 'direction' ya filtrado por colisiones) ---
+    if (direction.z !== 0) {
         velocity.z -= direction.z * moveSpeed * delta;
     }
-    if (keyStates['KeyA'] || keyStates['KeyD']) {
+    if (direction.x !== 0) {
         velocity.x -= direction.x * moveSpeed * delta;
     }
 
