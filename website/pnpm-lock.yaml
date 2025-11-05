@@ -7,10 +7,14 @@ settings:
 importers:
 
   .:
+    dependencies:
+      three:
+        specifier: ^0.181.0
+        version: 0.181.0
     devDependencies:
       vite:
-        specifier: ^7.1.7
-        version: 7.1.10
+        specifier: ^7.1.12
+        version: 7.1.12
 
 packages:
 
@@ -327,12 +331,15 @@ packages:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
 
+  three@0.181.0:
+    resolution: {integrity: sha512-KGf6EOCOQGshXeleKxpxhbowQwAXR2dLlD93egHtZ9Qmk07Saf8sXDR+7wJb53Z1ORZiatZ4WGST9UsVxhHEbg==}
+
   tinyglobby@0.2.15:
     resolution: {integrity: sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ==}
     engines: {node: '>=12.0.0'}
 
-  vite@7.1.10:
-    resolution: {integrity: sha512-CmuvUBzVJ/e3HGxhg6cYk88NGgTnBoOo7ogtfJJ0fefUWAxN/WDSUa50o+oVBxuIhO8FoEZW0j2eW7sfjs5EtA==}
+  vite@7.1.12:
+    resolution: {integrity: sha512-ZWyE8YXEXqJrrSLvYgrRP7p62OziLW7xI5HYGWFzOvupfAlrLvURSzv/FyGyy0eidogEM3ujU+kUG1zuHgb6Ug==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
@@ -597,12 +604,14 @@ snapshots:
 
   source-map-js@1.2.1: {}
 
+  three@0.181.0: {}
+
   tinyglobby@0.2.15:
     dependencies:
       fdir: 6.5.0(picomatch@4.0.3)
       picomatch: 4.0.3
 
-  vite@7.1.10:
+  vite@7.1.12:
     dependencies:
       esbuild: 0.25.11
       fdir: 6.5.0(picomatch@4.0.3)

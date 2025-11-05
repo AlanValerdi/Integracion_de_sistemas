@@ -1,189 +1,50 @@
-import './style.css'
-// model loader
-import * as Three from 'three'
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import './style.css';
+// Importa el setup de la escena
+import { setupScene, scene, camera, renderer } from './core/scene.js';
+// Importa el cargador de modelos
+import { loadModel } from './core/loader.js';
+// Importa módulo de luces
+import { setupLights, encenderLuzA, apagarLuzA, encenderLuzB, apagarLuzB } from './controls/LightManager.js';
+// Importa modulo de movimiento
+import { setupMovement } from './controls/movement.js'; 
 
-// --MARK: Escena y renderizador
+// --- 1. Inicialización Asíncrona ---
+async function init() {
+    // 1. Configura la escena, cámara, renderer y loop de animación
+    setupScene();
 
-const scene = new Three.Scene();
+    // 2. Carga el modelo (espera a que termine)
+    try {
+        const gltf = await loadModel('/models/casa.glb');
+        scene.add(gltf.scene); // Añade el modelo a la escena
 
-// Color del fondo gris claro
-scene.background = new Three.Color(0x303030)
+        // Obtener structure model (Paredes)
+        const collidables = [];
+        gltf.scene.traverse((child) => {
+            if (child.isMesh && child.name === "Structure") {
+                collidables.push(child);
+            }
+        });
 
-// instanciar render
-const renderer = new Three.WebGLRenderer({ antialias: true });
+        // 3. Inicializa los módulos de control (luces, TV, etc.)
+        setupLights(gltf.scene, scene);
+        // setupTV(gltf.scene, scene);
+        setupMovement(camera, renderer.domElement, collidables);
 
-renderer.shadowMap.enabled = true; // <-- Mapas de sombras activadas
-renderer.shadowMap.type = Three.PCFSoftShadowMap; // <-- Tipo de sombra
+        console.log("Aplicación 3D inicializada.");
 
-// para performance poner atributos/2 y updateStyle=false
-renderer.setSize(window.innerWidth, window.innerHeight);
-
-// Agregar el render al DOM/html
-document.body.appendChild(renderer.domElement);
-
-// -- Fin Escena y renderizador
-
-
-// ----MARK: Camara
-
-const camera = new Three.PerspectiveCamera(76, window.innerWidth / window.innerHeight, 0.1, 1000);
-// Posicion inicial de la camara, ajustar
-camera.position.set(5,5,10);
-
-// --Fin Camara
-
-
-// ----MARK: Controles de Orbita
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true; // Suavizado
-
-// --Fin Controles de Orbita
-
-
-// --MARK: Luz deficniciones
-const ambientLight = new Three.AmbientLight(0xffffff, 0);
-scene.add(ambientLight);
-
-// luz tipo sol
-const directionalLight = new Three.DirectionalLight(0xffffff, 1);
-directionalLight.position.set(5, 10, 7/5);
-// scene.add(directionalLight);
-// --Fin Luz definiciones
-
-// --MARK: VARIABLES PARA OBJETOS
-let luzSalaObjeto = null;
-let materialApagado = null;
-let materialEncendido = null;
-let luzReal = null;
-let luzTarget = null;
-
-// --MARK: Cargar modelo GLTF
-const loader = new GLTFLoader();
-loader.load(
-  '/models/casa.glb',
-  
-  // onSuccess
-  function (gltf) {
-    const model = gltf.scene;
-    console.log("Modelo cargado:", model);
-
-    // Recorrer modelo para encontrar la luz y materiales
-    model.traverse((child) => {
-      // Imprimir información de cada malla
-      if (child.isMesh) {
-           console.log(child.name, child.material.type); 
-      }
-
-      // donde child es cada objeto dentro del modelo glb
-      if (child.isMesh && child.name === "Luz_Sala") {
-        console.log("Encontrada la luz de la sala:", child);
-        
-        // guardar objeto
-        luzSalaObjeto = child;
-
-        // crear luz real en la posicion de la luz de la sala
-        crearLuzReal();
-        // guardar materiales
-        materialApagado = child.material;
-        // creacion del material encendido y clonar para no arruinar el original
-        materialEncendido = child.material.clone();
-
-        // agregar emossive para hacer que brille y definir su intensidad
-        materialEncendido.emissive = new Three.Color(0xffffaa);
-        materialEncendido.emissiveIntensity = 2;
-
-      }
-
-      // MARK: Configuracion de sombras para cada malla TODO: ajustar segun modelo
-      // if (child.isMesh && (child.name === "Sofa" || child.name === "Structure" || child.name === "CoffeeTable")) {
-      //     // El sofá y la mesa PROYECTAN sombras
-      //     child.castShadow = true;
-      //     // Y también RECIBEN sombras (ej. del cojín)
-      //     child.receiveShadow = true;
-      // }
-    });
-
-    // Agregar el modelo a la escena
-    scene.add(model);
-  },
-  // onProgress
-  undefined,
-  // onError
-  function (error) {
-    console.error("Error al cargar el modelo GLTF:", error);
-  }
-)
-
-function crearLuzReal() {
-    // Parámetros: (color, intensidad, distancia, ángulo, penumbra, decaimiento)
-    // CAMBIOS:
-    // - Distancia: 50 (más alcance)
-    // - Ángulo: Math.PI / 3 (cono más ancho)
-    // - Penumbra: 0.4 (bordes más suaves)
-    // - Decaimiento: 1 (decaída lineal, más fácil de controlar que la cuadrática "2")
-    luzReal = new Three.SpotLight(0xffffee, 0, 50, Math.PI / 3, 0.4, 1);
-
-    // Mueve la luz más arriba, dentro de la pantalla
-    const posicionBase = luzSalaObjeto.position;
-    luzReal.position.set(posicionBase.x, posicionBase.y + 7.5, posicionBase.z); // Ajusta el 7.5 si es necesario
-
-    // --- ¡NUEVO! PROYECTAR SOMBRAS ---
-    luzReal.castShadow = true; 
-    luzReal.shadow.mapSize.width = 1024; // Resolución de la sombra
-    luzReal.shadow.mapSize.height = 1024;
-    
-    // El objetivo (Target)
-    luzTarget = new Three.Object3D();
-    luzTarget.position.set(posicionBase.x + 3, 0, posicionBase.z);
-    scene.add(luzTarget);
-    luzReal.target = luzTarget;
-
-    const lightHelper = new Three.SpotLightHelper(luzReal);
-    scene.add(lightHelper);
-}
-
-// MARK: --- Funciones de control de la luz
-window.encenderLuz = function() {
-  if (luzSalaObjeto && materialEncendido && luzReal) {
-    console.log("Encendiendo la luz de la sala");
-    luzSalaObjeto.material = materialEncendido;
-    luzReal.intensity = 100; // MARK: Ajustar intensidad según necesidad
-
-    if(!luzReal.parent) {
-      scene.add(luzReal);
+    } catch (error) {
+        console.error("No se pudo inicializar la aplicación:", error);
     }
-  }else {
-    console.warn("No se puede encender la luz: objeto o material no definido");
-  }
 }
 
-window.apagarLuz = function() {
-  if (luzSalaObjeto && materialApagado && luzReal) {
-    console.log("Apagando la luz de la sala");
-    luzSalaObjeto.material = materialApagado;
-    luzReal.intensity = 0;
+// --- 2. Iniciar la Aplicación ---
+init();
 
-    if(luzReal.parent) {
-      scene.remove(luzReal);
-    }
-  }else {
-    console.warn("No se puede apagar la luz: objeto o material no definido");
-  }
-}
-
-// MARK: --- Bucle de animacion/renderizado
-function animate() {
-  requestAnimationFrame(animate);
-
-  // Actualizar controles
-  controls.update();
-  // Renderizar la escena desde la perspectiva de la camara
-  renderer.render(scene, camera);
-}
-
-animate();
-
-
-
+// --- 3. Exponer controles a la consola para pruebas ---
+// (Esto es opcional, pero útil para ti)
+window.encenderLuzA = encenderLuzA;
+window.apagarLuzA = apagarLuzA;
+window.encenderLuzB = encenderLuzB;
+window.apagarLuzB = apagarLuzB;
+// ...etc.
