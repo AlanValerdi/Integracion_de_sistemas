@@ -38,23 +38,33 @@ export function setUpWebScoket() {
             // Casos de manejo de luz
             case "Enciende luz de la izquierda":
                 encenderLuzA()
+                break;
             case "Apaga la luz de la izquierda":
-                apagarLuzA
+                apagarLuzA()
+                break;
             case "Enciende luz de la derecha":
                 encenderLuzB()
+                break;
             case "Apaga la luz de la derecha":
                 apagarLuzB()
+                break;
             
             // Manejo de TV
             case "Enciende la tele":
                 encenderTV()
+                break;
             case "Cambia de canal":
                 cambiarCanal()
+                break;
             case "Apagar la tele":
                 apagarTV()
-
+                break;
+            default:
+                console.warn("Comando desconocido", command);
         }
 
     }
+
+    // TODO: Crear funcion de retorno, enviar mensaje de confirmacion para cada caso
 
 }

@@ -8,13 +8,14 @@ import { setupLights, encenderLuzA, apagarLuzA, encenderLuzB, apagarLuzB } from 
 // Importa modulo de movimiento
 import { setupMovement } from './controls/movement.js'; 
 import { encenderTV, apagarTV, cambiarCanal, setupTV } from './controls/TVManager.js';
+import { setUpWebScoket } from './core/webSocketManager.js';
 
-// --- 1. Inicialización Asíncrona ---
+// ---  definicion Init ---
 async function init() {
-    // 1. Configura la escena, cámara, renderer y loop de animación
+    // setear escena
     setupScene();
 
-    // 2. Carga el modelo (espera a que termine)
+    // Carga el modelo 
     try {
         const gltf = await loadModel('/models/casa.glb');
         scene.add(gltf.scene); // Añade el modelo a la escena
@@ -27,11 +28,12 @@ async function init() {
             }
         });
 
-        // 3. Inicializa los módulos de control (luces, TV, etc.)
+        // Inicializa los módulos de control
         setupLights(gltf.scene, scene);
         // setupTV(gltf.scene, scene);
         setupMovement(camera, renderer.domElement, collidables);
         setupTV(gltf.scene);
+        setUpWebScoket();
 
         console.log("Aplicación 3D inicializada.");
 
@@ -40,10 +42,10 @@ async function init() {
     }
 }
 
-// --- 2. Iniciar la Aplicación ---
+// --- Init ---
 init();
 
-// --- 3. Exponer controles a la consola para pruebas ---
+// --- func para consola ---
 // Control de luces
 window.encenderLuzA = encenderLuzA;
 window.apagarLuzA = apagarLuzA;
@@ -55,4 +57,3 @@ window.encenderTV = encenderTV;
 window.apagarTV = apagarTV;
 window.cambiarCanal = cambiarCanal;
 
-// ...etc.
